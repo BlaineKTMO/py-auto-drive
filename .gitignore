@@ -126,7 +126,7 @@ venv.bak/
 dmypy.json
 
 #vim
-~/
+~/.vim/
 
 # Pyre type checker
 .pyre/
