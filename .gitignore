@@ -127,6 +127,7 @@ dmypy.json
 
 #vim
 ~/.vim/
+.vim/
 
 # Pyre type checker
 .pyre/
