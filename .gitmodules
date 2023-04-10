@@ -1,3 +1,6 @@
 [submodule "PyBotSim"]
 	path = PyBotSim
 	url = https://github.com/BlaineKTMO/PyBotSim
+	branch = pyautodrive
+[submodules "PyBotSim"]
+	branch = pyautodrive
