@@ -2,44 +2,45 @@ import torch
 import PyBotSim.src.simulator as Sim
 import src.PolicyGradAgent as Agent
 
-inputSize = 182
-hiddenSize = 100
-outputSize = 2
-learningRate = 0.01
+class Model:
+    def __init__(self, inputSize, hiddenSize, outputSize, learningRate):
+        self.sim = Sim.Simulator()
+        self.agent = Agent.PolicyGradAgent(inputSize, hiddenSize,
+                                           outputSize, learningRate)
 
+    def compute_reward(self, robot_pos, goal_pos):
+        distance = ((robot_pos - goal_pos) ** 2).sum().sqrt()
+        return -distance
 
-def compute_reward(robot_pos, goal_pos):
-    distance = ((robot_pos - goal_pos) ** 2).sum().sqrt()
-    return -distance
+    def run_episode(self, goal_position):
+        self.sim.reset()
+        input, _ = self.sim.step()
+        done = False
+        rewards = []
+        log_probs = []
 
-def run_episode(policyAgent, env, goal_position):
-    laser_scan, heading = env.reset()
-    done = False
-    rewards = []
-    log_probs = []
+        while not done:
+            action, action_prob = self.agent.select_action(input)
+            print(action)
+            next_input, done = self.sim.step(action)
+            self.sim.forward()
+            log_probs.append(torch.log(action_prob))
 
-    while not done:
-        action, action_prob = policyAgent.select_action(laser_scan, heading)
-        next_laser_scan, next_heading, reward, done = env.step(action)
-        log_probs.append(torch.log(action_prob))
+            # Compute reward based on progress towards goal
+            current_position = self.sim.robot.getPos()
+            reward = self.compute_reward(current_position, goal_position)
+            rewards.append(reward)
+            log_probs.append(torch.log(action_prob))
 
-        # Compute reward based on progress towards goal
-        current_position = env.get_robot_position()
-        reward = compute_reward(current_position, goal_position)
-        rewards.append(reward)
-        log_probs.append(torch.log(action_prob))
-
-    # Update policy using accumulated rewards and log probabilities
-    policyAgent.update_policy(rewards, log_probs)
+        # Update policy using accumulated rewards and log probabilities
+        self.agent.update_policy(rewards, log_probs)
 
 
 def main():
-    running = True
-    sim = Sim.Simulator()
-    agent = Agent.PolicyGradAgent(inputSize, hiddenSize, outputSize, learningRate)
+    inputSize = 181
+    hiddenSize = 100
+    outputSize = 2
+    learningRate = 0.01
 
-    action = (0, 0)
-    while(running):
-        if not sim.forward(action):
-            running = False
-        
+    model = Model(inputSize, hiddenSize, outputSize, learningRate)
+    model.run_episode((800, 800))
