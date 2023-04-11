@@ -5,21 +5,27 @@ import torch.nn as nn
 from src.PolicyGradientNetwork import PolicyNetwork
 
 discount_factor = 0.99
-
+eps = 0.000000001
 
 class PolicyGradAgent:
     def __init__(self, inputSize, outputSize, hiddenSize, lr):
         self.policy_network = PolicyNetwork(inputSize, outputSize, hiddenSize)
-        self.optimizer = optim.Adam(self.policy_network.parameters(), lr=lr)
+        self.optimizer = optim.SGD(self.policy_network.parameters(), lr=lr)
 
     def select_action(self, input):
         # Picking from policy
-        with torch.no_grad():
-            action_probs = self.policy_network(torch.FloatTensor(input))
-            action_probs = nn.Softmax(dim=-1)(action_probs)
-            action_dist = torch.distributions.Categorical(action_probs)
-            action = action_dist.sample()
-        return action.item(), action_probs[action]
+        # with torch.no_grad():
+        #     action = self.policy_network(torch.FloatTensor(input))
+        #     action_dist = torch.distributions.Categorical(action_probs)
+        #     action = action_dist.sample()
+        # return action.item(), action_probs[action]
+        
+        action_mean, action_std = self.policy_network(torch.FloatTensor(input))
+        action_mean = torch.tensor([action_mean]) * torch.ones(2)
+        action_std = torch.tensor([action_std]) * torch.ones(2)
+        action_dist = torch.distributions.MultivariateNormal(action_mean, torch.diag_embed(action_std.unsqueeze(0) + eps))
+        action = action_dist.sample()
+        return action.numpy()[0], action_dist.log_prob(action)
 
     def update_policy(self, rewards, log_probs):
         discounted_rewards = []
