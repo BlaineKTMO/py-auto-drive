@@ -13,7 +13,7 @@ class Model:
         distance = ((robot_pos[0] - goal_pos[0]) ** 2 + (robot_pos[1] - goal_pos[1]) ** 2) ** 0.5
         return -distance
 
-    def run_episode(self, goal_position):
+    def run_episode(self):
         self.sim.reset()
         for _ in range(50):
             input, theta, dist, vl, vr, running = self.sim.step()
@@ -23,22 +23,26 @@ class Model:
         rewards = []
         log_probs = []
 
-        while running:
+        count = 0
+        while running and count < 1000:
             action, action_prob = self.agent.select_action(input)
-            action_prob.requires_grad = True
-            print(action_prob)
+            # print(action_prob)
             input, theta, dist, vl, vr, running = self.sim.step(action)
 
             input.append(theta)
             input.append(vl)
             input.append(vr)
+            # print(input)
 
             # Compute reward based on progress towards goal
             reward = -abs(dist)
+            if (not running):
+                reward = -1
             rewards.append(reward)
-            log_probs.append(torch.log(action_prob))
+            log_probs.append(action_prob)
             # print(f"Reward: {reward}")
             # print(f"theta: {theta}")
+            count += 1
 
         # Update policy using accumulated rewards and log probabilities
         self.agent.update_policy(rewards, log_probs)
@@ -46,10 +50,10 @@ class Model:
 
 def main():
     inputSize = 184
-    hiddenSize = 250
-    outputSize = 2
-    learningRate = 0.001
+    hiddenSize = 100
+    outputSize = 5
+    learningRate = 0.01
 
     model = Model(inputSize, outputSize, hiddenSize, learningRate)
     while True:
-        model.run_episode((800, 600))
+        model.run_episode()

@@ -9,10 +9,11 @@ class PolicyNetwork(nn.Module):
         self.hidden_fc = nn.Linear(hidden_size, hidden_size)
         self.output_fc = nn.Linear(hidden_size, output_size)
         self.softmax = nn.Softmax(dim=-1)
+        self.relu = nn.ReLU()
 
     def forward(self, input):
         output = self.input_fc(input)
-        output = torch.relu(self.hidden_fc(output))
+        output = self.hidden_fc(output)
         output = self.output_fc(output)
-        output = self.softmax(output)
+        output = self.relu(output)
         return output
