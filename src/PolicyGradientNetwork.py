@@ -15,5 +15,6 @@ class PolicyNetwork(nn.Module):
         output = self.input_fc(input)
         output = self.hidden_fc(output)
         output = self.output_fc(output)
-        output = self.relu(output)
+        # output = self.relu(output)
+        output = self.softmax(output)
         return output

@@ -23,7 +23,6 @@ class Model:
         step = 0
         while running and step < maxSteps:
             action, action_prob = self.agent.select_action(input)
-            # print(action_prob)
             input, dist, running, collision = self.sim.step(action=action,draw=draw)
 
             # print(input)
@@ -45,18 +44,18 @@ class Model:
 def main():
     inputSize = 184
     hiddenSize = 100
-    outputSize = 5
-    learningRate = 0.01
-    maxSteps = 2000
+    outputSize = 2
+    learningRate = 0.001
+    maxSteps = 1000
 
     model = Model(inputSize, outputSize, hiddenSize, learningRate)
 
-    checkpoint = torch.load("model.ckpt")
-    # model.agent.policy_network.load_state_dict(checkpoint['net_stat_dict'])
-    # model.agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    # epoch = checkpoint['epoch']
+    checkpoint = torch.load("DualNormDistModelNoSTD.ckpt")
+    model.agent.policy_network.load_state_dict(checkpoint['net_state_dict'])
+    model.agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
     
-    model.agent.policy_network.load_state_dict(checkpoint)
+    # model.agent.policy_network.load_state_dict(checkpoint)
 
     # Training Loop
     epoch = 0
@@ -66,8 +65,8 @@ def main():
             torch.save({
                            'net_state_dict': model.agent.policy_network.state_dict(),
                             'optimizer_state_dict': model.agent.optimizer.state_dict(),
-                            'epoch': epoch}, "model2.ckpt")
+                            'epoch': epoch}, "DualNormDistModelNoSTD.ckpt")
             pass
         else:
-            model.run_episode()
+            model.run_episode(maxSteps=maxSteps)
         epoch += 1

@@ -14,25 +14,25 @@ class PolicyGradAgent:
 
     def select_action(self, input):
         # Picking from policy
-        with torch.no_grad():
-            softplus = torch.nn.Softplus()
+        # with torch.no_grad():
+            # softplus = torch.nn.Softplus()
 
-            action_mean_l, action_mean_r, d1, d2, d3 = self.policy_network(torch.FloatTensor(input))
+        action_mean_l, action_mean_r = self.policy_network(torch.FloatTensor(input))
+        print(action_mean_l, action_mean_r)
 
-            action_mean = torch.tensor([action_mean_l, action_mean_r], requires_grad=True)
-            d = softplus(torch.tensor([d1, d2, d3], requires_grad=True))
+        # action_mean = torch.tensor([action_mean_l, action_mean_r])
+        # action_std = torch.tensor([std_l, std_r])
 
-            # Calculate covariance matrix
-            cov = torch.zeros(2, 2)
-            cov[torch.tril_indices(2, 2, offset=0).tolist()] = d
-            cov = cov * torch.transpose(cov, 0, 1)
+        action_dist_l = torch.distributions.Normal(action_mean_l, 2)
+        action_dist_r = torch.distributions.Normal(action_mean_r, 2)
 
-            # Create MVN and sample action
-            action_dist = torch.distributions.MultivariateNormal(action_mean, cov + eps)
-            action = action_dist.sample()
-            # print(action_dist.log_prob(action))
+        action_l = action_dist_l.sample()
+        action_r = action_dist_r.sample()
 
-        return action.numpy(), action_dist.log_prob(action).unsqueeze(0)
+        action = (action_l.numpy(), action_r.numpy())
+        action_prob = action_dist_l.log_prob(action_l) * action_dist_r.log_prob(action_r)
+
+        return action, action_prob.unsqueeze(0)
 
     def update_policy(self, rewards, log_probs):
         discounted_rewards = []
@@ -49,12 +49,15 @@ class PolicyGradAgent:
         discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-9)
 
         # Calculate policy loss
+        self.optimizer.zero_grad()
         policy_loss = []
         for log_prob, reward in zip(log_probs, discounted_rewards):
-            policy_loss.append(-abs(-log_prob * reward))
-        policy_loss = torch.cat(policy_loss).sum()
+            loss = -abs(-log_prob * reward)
+            policy_loss.append(loss)
+        policy_loss = torch.cat(policy_loss)
+        policy_loss = torch.cat([policy_loss]).sum()
 
         # Optimization
-        self.optimizer.zero_grad()
         policy_loss.backward()
         self.optimizer.step()
+        print([x.grad for x in self.policy_network.parameters()])
