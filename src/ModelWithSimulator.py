@@ -25,15 +25,16 @@ class Model:
             action, action_prob = self.agent.select_action(input)
             input, dist, running, collision = self.sim.step(action=action,draw=draw)
 
-            # print(input)
+            print(action)
 
             # Compute reward based on progress towards goal
-            reward = -abs(dist)
+            reward = 1-abs(dist)
             if (collision):
                 reward = -2
             rewards.append(reward)
+            print(reward)
             log_probs.append(action_prob)
-            print(f"Reward: {reward}")
+            # print(f"Reward: {reward}")
             # print(f"theta: {theta}")
             step += 1
 
@@ -42,15 +43,15 @@ class Model:
 
 
 def main():
-    inputSize = 184
-    hiddenSize = 100
+    inputSize = 3
+    hiddenSize = 2
     outputSize = 2
-    learningRate = 0.001
+    learningRate = 0.01
     maxSteps = 1000
 
     model = Model(inputSize, outputSize, hiddenSize, learningRate)
 
-    checkpoint = torch.load("DualNormDistModelNoSTD.ckpt")
+    checkpoint = torch.load("DualNormDistModel3Inputs.ckpt")
     model.agent.policy_network.load_state_dict(checkpoint['net_state_dict'])
     model.agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
@@ -60,13 +61,12 @@ def main():
     # Training Loop
     epoch = 0
     while True:
-        if epoch % 10 == 0:
+        if epoch % 1 == 0:
             model.run_episode(maxSteps=maxSteps, draw=True)
             torch.save({
-                           'net_state_dict': model.agent.policy_network.state_dict(),
-                            'optimizer_state_dict': model.agent.optimizer.state_dict(),
-                            'epoch': epoch}, "DualNormDistModelNoSTD.ckpt")
-            pass
+                       'net_state_dict': model.agent.policy_network.state_dict(),
+                        'optimizer_state_dict': model.agent.optimizer.state_dict(),
+                        'epoch': epoch}, "DualNormDistModel3Inputs.ckpt")
         else:
             model.run_episode(maxSteps=maxSteps)
         epoch += 1

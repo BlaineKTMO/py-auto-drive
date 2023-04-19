@@ -17,14 +17,15 @@ class PolicyGradAgent:
         # with torch.no_grad():
             # softplus = torch.nn.Softplus()
 
+        input = input[181:]
+
         action_mean_l, action_mean_r = self.policy_network(torch.FloatTensor(input))
-        print(action_mean_l, action_mean_r)
 
         # action_mean = torch.tensor([action_mean_l, action_mean_r])
         # action_std = torch.tensor([std_l, std_r])
 
-        action_dist_l = torch.distributions.Normal(action_mean_l, 2)
-        action_dist_r = torch.distributions.Normal(action_mean_r, 2)
+        action_dist_l = torch.distributions.Normal(action_mean_l, 1)
+        action_dist_r = torch.distributions.Normal(action_mean_r, 1)
 
         action_l = action_dist_l.sample()
         action_r = action_dist_r.sample()
@@ -60,4 +61,3 @@ class PolicyGradAgent:
         # Optimization
         policy_loss.backward()
         self.optimizer.step()
-        print([x.grad for x in self.policy_network.parameters()])
