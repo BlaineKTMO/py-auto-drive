@@ -14,32 +14,43 @@ class Model:
         return -distance
 
     def run_episode(self, maxSteps=1000, draw=False):
+        states = []
         rewards = []
         log_probs = []
+        actions = []
+
         self.sim.reset()
         for _ in range(50):
             input, dist, running, collision = self.sim.step(draw=draw)
 
         step = 0
         while running and step < maxSteps:
-            action, action_prob = self.agent.select_action(input)
+            states.append(input)
+            mean, rand_action, action_prob = self.agent.select_action(input)
+
+            x = torch.rand(1)
+            action = mean if x < 0.75 else rand_action
+            actions.append(action)
+
             input, dist, running, collision = self.sim.step(action=action,draw=draw)
 
-            print(action)
+            # print(action)
+            # print(self.sim.robot.x)
 
+            reward = dist
             # Compute reward based on progress towards goal
-            reward = 1-abs(dist)
-            if (collision):
-                reward = -2
+            # reward = 1-dist
+            # if (collision):
+                # reward = -2
             rewards.append(reward)
-            print(reward)
+            # print(reward)
             log_probs.append(action_prob)
             # print(f"Reward: {reward}")
             # print(f"theta: {theta}")
             step += 1
 
         # Update policy using accumulated rewards and log probabilities
-        self.agent.update_policy(rewards, log_probs)
+        self.agent.update_policy(states, rewards, log_probs, actions)
 
 
 def main():
@@ -47,26 +58,26 @@ def main():
     hiddenSize = 2
     outputSize = 2
     learningRate = 0.01
-    maxSteps = 1000
+    maxSteps = 2000
+    epoch = 0
 
     model = Model(inputSize, outputSize, hiddenSize, learningRate)
 
-    checkpoint = torch.load("DualNormDistModel3Inputs.ckpt")
-    model.agent.policy_network.load_state_dict(checkpoint['net_state_dict'])
-    model.agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    epoch = checkpoint['epoch']
-    
-    # model.agent.policy_network.load_state_dict(checkpoint)
+    # checkpoint = torch.load("DualNormDistModel3Inputs.ckpt")
+    # model.agent.policy_network.load_state_dict(checkpoint['net_state_dict'])
+    # model.agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    # epoch = checkpoint['epoch']
 
     # Training Loop
-    epoch = 0
     while True:
         if epoch % 1 == 0:
             model.run_episode(maxSteps=maxSteps, draw=True)
-            torch.save({
-                       'net_state_dict': model.agent.policy_network.state_dict(),
-                        'optimizer_state_dict': model.agent.optimizer.state_dict(),
-                        'epoch': epoch}, "DualNormDistModel3Inputs.ckpt")
+            # torch.save({
+            #            'net_state_dict': model.agent.policy_network.state_dict(),
+            #             'optimizer_state_dict': model.agent.optimizer.state_dict(),
+            #             'epoch': epoch}, "DualNormDistModel3Inputs.ckpt")
         else:
             model.run_episode(maxSteps=maxSteps)
+
+        print("Epoch: ", epoch)
         epoch += 1

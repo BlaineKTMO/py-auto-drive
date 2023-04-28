@@ -14,11 +14,11 @@ class PolicyNetwork(nn.Module):
 
     def forward(self, input):
         output = self.input_fc(input)
-        # output = self.hidden_fc(output)
-        # output = self.relu(output)
+        output = self.hidden_fc(output)
+        output = self.relu(output)
         output = self.output_fc(output)
         # output = self.relu(output)
         # output = self.softmax(output)
-        output = self.relu(output)
-        output = self.tanh(output)
+        # output = self.relu(output)
+        # output = self.tanh(output)
         return output
